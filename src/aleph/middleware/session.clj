@@ -6,6 +6,7 @@
 
 (ns aleph.middleware.session
   (:require [aleph.middleware.util :refer [defer]]
+            [manifold.deferred :as d]
             [ring.middleware.session :refer [session-request
                                              session-response]]
             [ring.middleware.session.memory :as mem]))
@@ -40,10 +41,12 @@
   :cookie-attrs - A map of attributes to associate with the session cookie.
                   Defaults to {:http-only true}."
   ([handler]
-     (wrap-session handler {}))
+   (wrap-session handler {}))
   ([handler options]
-     (let [options (session-options options)]
-       (fn [request]
-         (let [new-request (session-request request options)]
-           (-> (handler new-request)
-               ((defer session-response) new-request options)))))))
+   (let [options (session-options options)]
+     (fn [request]
+       (let [new-request (session-request request options)
+             response (handler new-request)
+             session-response (cond-> session-response
+                                (d/deferrable? response) (defer))]
+         (session-response response new-request options))))))

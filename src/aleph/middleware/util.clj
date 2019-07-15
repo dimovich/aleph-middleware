@@ -10,6 +10,6 @@
 
 (defn defer [f]
   (fn [response & args]
-      (d/chain' response
-                (fn [response]
-                  (apply f (into [response] args))))))
+    (d/chain' response
+              (fn [response]
+                (apply f response args)))))
